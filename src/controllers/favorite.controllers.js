@@ -3,15 +3,22 @@ const Favorite = require('../models/Favorite');
 const User = require('../models/User');
 
 const getAll = catchError(async(req, res) => {
-    const { newsId, userId } = req.query;
+    const { newsId, userId, offset, perPage } = req.query;
     const where = {};
     if (newsId) where.newsId = newsId;
     if (userId) where.userId = userId;
     const results = await Favorite.findAll({ 
-        include: [ User ], 
-        where
+        include: [ { 
+            model: User, 
+            // attributes: ['id', 'firstName', 'lastName', 'email'],
+            attributes: { exclude: ['password'] }
+        } ],
+        where,
+        offset: offset,
+        limit: perPage,
     });
-    return res.json(results);
+    const total = await Favorite.count({ where: where });
+    return res.json({total, results});
 });
 
 const create = catchError(async(req, res) => {

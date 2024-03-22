@@ -3,6 +3,7 @@ const News = require('../models/News');
 const Category = require('../models/Category');
 const { Op } = require('sequelize');
 const Image = require('../models/Image');
+const Favorite = require('../models/Favorite');
 
 
 // query parameters y where
@@ -14,10 +15,21 @@ const getAll = catchError(async(req, res) => {
     if (headline) where.headline = { [Op.iLike]: `%${headline}%` };
 
     const results = await News.findAll({ 
-        include: [ Category, Image ], 
+        include: [ Category, Image, Favorite ],
         where: where,
     });
-    return res.json(results);
+    const newsWithRating = results.map(news => {
+        const newsJson = news.toJSON();
+        let sum = 0
+        newsJson.favorites.forEach(favorite => {
+            sum += favorite.rate
+        })
+        const totalFavorites = newsJson.favorites.length;
+        const average = totalFavorites > 0 ? sum / totalFavorites : 0;
+        delete newsJson.favorites;
+        return { ...newsJson, rating: average }
+    });
+    return res.json(newsWithRating);
 });
 
 const create = catchError(async(req, res) => {
@@ -27,9 +39,17 @@ const create = catchError(async(req, res) => {
 
 const getOne = catchError(async(req, res) => {
     const { id } = req.params;
-    const result = await News.findByPk(id, { include: [Category, Image] });
+    const result = await News.findByPk(id, { include: [Category, Image, Favorite] });
     if(!result) return res.sendStatus(404);
-    return res.json(result);
+    const newsJson = result.toJSON();
+    let sum = 0
+    newsJson.favorites.forEach(favorite => {
+        sum += favorite.rate
+    })
+    const totalFavorites = newsJson.favorites.length;
+    const average = totalFavorites > 0 ? sum / totalFavorites : 0;
+    delete newsJson.favorites;
+    return res.json({ ...newsJson, rating: average });
 });
 
 const remove = catchError(async(req, res) => {
