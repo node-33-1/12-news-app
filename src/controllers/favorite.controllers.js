@@ -1,6 +1,8 @@
 const catchError = require('../utils/catchError');
 const Favorite = require('../models/Favorite');
 const User = require('../models/User');
+const News = require('../models/News');
+const Image = require('../models/Image');
 
 const getAll = catchError(async(req, res) => {
     const { newsId, userId, offset, perPage } = req.query;
@@ -12,6 +14,9 @@ const getAll = catchError(async(req, res) => {
             model: User, 
             // attributes: ['id', 'firstName', 'lastName', 'email'],
             attributes: { exclude: ['password'] }
+        }, {
+            model: News,
+            include: [Image]
         } ],
         where,
         offset: offset,
